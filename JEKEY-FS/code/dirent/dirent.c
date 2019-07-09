@@ -1,28 +1,31 @@
 #include<stdio.h>
 #include<string.h>
-#include"inode.h"
-#include"block.h"
-#define FILE_MAX_LENGTH 200
-#define FILENAME_MAX_LENGTH 20
-#define FILE_MAXNUM 10
-short nowin = 0;//µ±Ç°Ä¿Â¼
+#include<stdbool.h>
+
+#include"dirent.h"
+#include"../inode/inode.h"
+#include"../block/block.h"
+#include"../usr/user.h"
+
+short nowin = 0;//ï¿½ï¿½Ç°Ä¿Â¼
 char nowins[10]="user";
 short openinode[]={0,0,0,0,0};
-void createfile(){
+
+void create(char* uPath){
     struct block re[10];
-	if (readblock(re)) {
+	if (readblock(re,uPath)){
 		int i = 0, n = 1;
 		for (; i < 10; i++) {
 			if (re[i].isused == 0)break;
 		}
 		if (i < 10){
-			readinode();
+			readinode(uPath);
 			for (; n < TOTAL_INODE; n++) if (inode[n].file_type == 0) break;
 		if (n == TOTAL_INODE)printf("no enough inode");
 		else {
 			printf("input your file name:");
 			char name[10];
-			scanf("%s", &name);
+			scanf("%s", name);
 			printf("input 0:read 1:write 2:read&write\n");
 			int r;
 			scanf("%d", &r);
@@ -32,13 +35,13 @@ void createfile(){
 			inode[n].protection = 2;
 			inode[n].lastInode = nowin;
 			strcpy(inode[n].name,name);
-			saveInode();
+			saveInode(uPath);
 		}
 	}
     else printf("not enough storage space!\n");
    }    
 }
-void openfile(){
+void open(char* uPath){
 	int j = 0, k = 0;
 	int saveinodeid;
 	char openadd[FILE_MAX_LENGTH];
@@ -47,9 +50,9 @@ void openfile(){
 	char checkfilename[FILE_MAXNUM][FILENAME_MAX_LENGTH];
 	memset(checkfilename, '\0', sizeof(checkfilename));
 	memset(getfilename, '\0', sizeof(getfilename));
-	for (int i = 0; i < FILE_MAX_LENGTH; i++)//»ñÈ¡Ã¿Ò»¸öÄ¿Â¼Ãû³Æ
+	for (int i = 0; i < FILE_MAX_LENGTH; i++)//ï¿½ï¿½È¡Ã¿Ò»ï¿½ï¿½Ä¿Â¼ï¿½ï¿½ï¿½ï¿½
 	{
-		if (openadd[i] == NULL)
+		if (openadd[i] == '\0')
 			break;
 		if (openadd[i] == '/')
 		{
@@ -65,17 +68,18 @@ void openfile(){
 	}
 
 	int openFile;
+	readinode(uPath);
 	for (int i = 0; i < TOTAL_INODE; i++)
 	{
 		openFile = -1;
 		for (int i1 = 0; i1 < FILENAME_MAX_LENGTH; i1++)
 		{
-			if (inode[i].name[i1] != getfilename[k][i1])//·ÇÍ¬ÃûÎÄ¼þ£¬½øÐÐÏÂÒ»¸ö½ÚµãÅÐ¶Ï¡Ì
+			if (inode[i].name[i1] != getfilename[k][i1])//ï¿½ï¿½Í¬ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Úµï¿½ï¿½Ð¶Ï¡ï¿½
 			{
 				break;
 
 			}
-			if (i1 == FILENAME_MAX_LENGTH - 1 || getfilename[k][i1 + 1] == NULL)//´æÔÚÍ¬ÃûÎÄ¼þ£¬»ñÈ¡Í¬ÃûÎÄ¼þÂ·¾¶²¢ÅÐ¶ÏÊÇ·ñÓë´´½¨Â·¾¶ÏàÍ¬
+			if (i1 == FILENAME_MAX_LENGTH - 1 || getfilename[k][i1 + 1] == '\0')//ï¿½ï¿½ï¿½ï¿½Í¬ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½È¡Í¬ï¿½ï¿½ï¿½Ä¼ï¿½Â·ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½ï¿½Ç·ï¿½ï¿½ë´´ï¿½ï¿½Â·ï¿½ï¿½ï¿½ï¿½Í¬
 			{
 				saveinodeid = i;
 				int lastinode;
@@ -84,7 +88,7 @@ void openfile(){
 				{
 					if (k - i2 < 0)
 					{
-						printf("Â·¾¶ÏàÍ¬£¬´æÔÚÏàÍ¬ÎÄ¼þ");
+						printf("Â·ï¿½ï¿½ï¿½ï¿½Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¬ï¿½Ä¼ï¿½");
 						openFile = 4;//
 						break;
 					}
@@ -96,7 +100,7 @@ void openfile(){
 							break;
 
 						}
-						if (i3 == FILENAME_MAX_LENGTH - 1 || getfilename[k - i2][i3 + 1] == NULL)
+						if (i3 == FILENAME_MAX_LENGTH - 1 || getfilename[k - i2][i3 + 1] == '\0')
 						{
 							lastinode = inode[lastinode].lastInode;
 							break;
@@ -106,7 +110,7 @@ void openfile(){
 						break;
 					if (k - i2 == 0)
 					{
-						//printf("Â·¾¶ÏàÍ¬£¬´æÔÚÏàÍ¬ÎÄ¼þ");
+						//printf("Â·ï¿½ï¿½ï¿½ï¿½Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¬ï¿½Ä¼ï¿½");
 						openFile = 4;//
 						break;
 					}
@@ -120,16 +124,16 @@ void openfile(){
 			break;
 	}
 	if (openFile == -1)
-		printf("²»´æÔÚ¸ÃÎÄ¼þ");
+		printf("ï¿½ï¿½ï¿½ï¿½ï¿½Ú¸ï¿½ï¿½Ä¼ï¿½");
 	if (openFile == 4)
 	{   int x;
 	for(x=0;x<5;x++){if(openinode[x]==0)openinode[x]=saveinodeid;break;}
-	if(x==5)printf("´ò¿ªÌ«¶àÎÄ¼þ");
+	if(x==5)printf("ï¿½ï¿½Ì«ï¿½ï¿½ï¿½Ä¼ï¿½");
 	}
 
 }
-void closefile(){
-		//¹Ø±ÕÎÄ¼þ
+void close(char* uPath){
+		//ï¿½Ø±ï¿½ï¿½Ä¼ï¿½
 	char closefile[FILE_MAX_LENGTH];
 	scanf("%s", closefile);
 	int closeFile;
@@ -139,9 +143,9 @@ void closefile(){
 	memset(checkfilename, '\0', sizeof(checkfilename));
 	memset(getfilename, '\0', sizeof(getfilename));
 	int j = 0, k = 0;
-	for (int i = 0; i < FILE_MAX_LENGTH; i++)//»ñÈ¡Ã¿Ò»¸öÄ¿Â¼Ãû³Æ
+	for (int i = 0; i < FILE_MAX_LENGTH; i++)//ï¿½ï¿½È¡Ã¿Ò»ï¿½ï¿½Ä¿Â¼ï¿½ï¿½ï¿½ï¿½
 	{
-		if (closefile[i] == NULL)
+		if (closefile[i] == '\0')
 			break;
 		if (closefile[i] == '/')
 		{
@@ -156,18 +160,18 @@ void closefile(){
 		}
 	}
 	
-	
+	readinode(uPath);
 	for (int i = 0; i < TOTAL_INODE; i++)
 	{
 		closeFile = -1;
 		for (int i1 = 0; i1 < FILENAME_MAX_LENGTH; i1++)
 		{
-			if (inode[i].name[i1] != getfilename[k][i1])//·ÇÍ¬ÃûÎÄ¼þ£¬½øÐÐÏÂÒ»¸ö½ÚµãÅÐ¶Ï¡Ì
+			if (inode[i].name[i1] != getfilename[k][i1])//ï¿½ï¿½Í¬ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Úµï¿½ï¿½Ð¶Ï¡ï¿½
 			{
 				break;
 
 			}
-			if (i1 == FILENAME_MAX_LENGTH - 1 || getfilename[k][i1 + 1] == NULL)//´æÔÚÍ¬ÃûÎÄ¼þ£¬»ñÈ¡Í¬ÃûÎÄ¼þÂ·¾¶²¢ÅÐ¶ÏÊÇ·ñÓë´´½¨Â·¾¶ÏàÍ¬
+			if (i1 == FILENAME_MAX_LENGTH - 1 || getfilename[k][i1 + 1] == '\0')//ï¿½ï¿½ï¿½ï¿½Í¬ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½È¡Í¬ï¿½ï¿½ï¿½Ä¼ï¿½Â·ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½ï¿½Ç·ï¿½ï¿½ë´´ï¿½ï¿½Â·ï¿½ï¿½ï¿½ï¿½Í¬
 			{
 				saveinodeid = i;
 				int lastinode;
@@ -176,7 +180,7 @@ void closefile(){
 				{
 					if (k - i2 < 0)
 					{
-						printf("Â·¾¶ÏàÍ¬£¬´æÔÚÏàÍ¬ÎÄ¼þ");
+						printf("Â·ï¿½ï¿½ï¿½ï¿½Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¬ï¿½Ä¼ï¿½");
 						closeFile = 4;//
 						break;
 					}
@@ -188,7 +192,7 @@ void closefile(){
 							break;
 
 						}
-						if (i3 == FILENAME_MAX_LENGTH - 1 || getfilename[k - i2][i3 + 1] == NULL)
+						if (i3 == FILENAME_MAX_LENGTH - 1 || getfilename[k - i2][i3 + 1] == '\0')
 						{
 							lastinode = inode[lastinode].lastInode;
 							break;
@@ -198,7 +202,7 @@ void closefile(){
 						break;
 					if (k - i2 == 0)
 					{
-						//printf("Â·¾¶ÏàÍ¬£¬´æÔÚÏàÍ¬ÎÄ¼þ");
+						//printf("Â·ï¿½ï¿½ï¿½ï¿½Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¬ï¿½Ä¼ï¿½");
 						closeFile = 4;//
 						break;
 					}
@@ -216,12 +220,12 @@ void closefile(){
 	{
 		int x;
 	for(x=0;x<5;x++){if(openinode[x]==saveinodeid)openinode[x]=0;break;}
-	if(x==5)printf("ÎÄ¼þÎ´´ò¿ª");
+	if(x==5)printf("ï¿½Ä¼ï¿½Î´ï¿½ï¿½");
 	}
 
 }
-void readfile(char* name){
-	readinode();
+void read(char* name,char* uPath){
+	readinode(uPath);
 	int i;
 	for(i=0;i<TOTAL_INODE;i++){
 	  if(inode[i].file_type==1&&inode[i].lastInode==nowin&&strcmp(name,inode[i].name)==0)
@@ -235,17 +239,13 @@ void readfile(char* name){
 		else if(inode[i].protection==0)printf("this file cant be read");
 		else{
 		struct block re[10];
-		readblock(re);
+		readblock(re,uPath);
 		printf("%s:%s",name,re[inode[i].blockid].data);
 		}
 	}
-
-
-
-
 }
-void writefile(char*name){
-	readinode();
+void write(char*name,char* uPath){
+	readinode(uPath);
 	int i;
 	for(i=0;i<TOTAL_INODE;i++){
 	  if(inode[i].file_type==1&&inode[i].lastInode==nowin&&strcmp(name,inode[i].name)==0)
@@ -259,21 +259,21 @@ void writefile(char*name){
 		else if(inode[i].protection==1)printf("this file cant be write");
 		else{
 		struct block re[10];
-		readblock(re);
+		readblock(re,uPath);
 		printf("please input date:");
 		scanf("%s",re[inode[i].blockid].data);
-		writeblock(re);
+		writeblock(re,uPath);
 		}
 	}
 }
-void changenowin(char* di){
+void chdir(char* di, char* uPath){
 	char*token;
 	short fir=nowin;
 	int i=0;
 	token = strtok(di,"/");
 	while (token!= NULL) {
 		if(strcmp(token,".")!=0){
-			readinode();
+			readinode(uPath);
 			for(i=0;i<TOTAL_INODE;i++){
 				if(inode[i].file_type==2&&inode[i].lastInode==fir&&strcmp(token,inode[i].name)==0){
 				    fir=i;
@@ -291,8 +291,7 @@ void changenowin(char* di){
 	else if(i==0){nowin=inode[nowin].lastInode;strcpy(nowins,inode[nowin].name);}
 	else {nowin=fir;strcpy(nowins,inode[nowin].name);}
 }
-void mkdir(){
-	
+void mkdir(char* uPath){
 	char createfile[FILE_MAX_LENGTH];
 	memset(createfile, '\0', sizeof(createfile));
 	printf("input dir:");
@@ -302,9 +301,9 @@ void mkdir(){
 	memset(checkfilename, '\0', sizeof(checkfilename));
 	memset(getfilename, '\0', sizeof(getfilename));
 	int j = 0, k = 0,s=0;;
-	for (int i = 0;i<FILE_MAX_LENGTH; i++)//»ñÈ¡Ã¿Ò»¸öÄ¿Â¼Ãû³Æ
+	for (int i = 0;i<FILE_MAX_LENGTH; i++)//ï¿½ï¿½È¡Ã¿Ò»ï¿½ï¿½Ä¿Â¼ï¿½ï¿½ï¿½ï¿½
 	{
-		if (createfile[i] == NULL)
+		if (createfile[i] == '\0')
 			break;
 		if (createfile[i] == '/')
 		{
@@ -319,17 +318,17 @@ void mkdir(){
 		}
 	}
 	
-	//¼ì²éÎÄ¼þÃûÊÇ·ñÖØ¸´
-	readinode();
+	//ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½Ø¸ï¿½
+	readinode(uPath);
 
-	//´´½¨Ä¿Â¼
+	//ï¿½ï¿½ï¿½ï¿½Ä¿Â¼
 	int createFile=-1;
 	for (int i = 0; i < TOTAL_INODE; i++)
 	{
 
 		createFile = -1;
 
-		if (inode[0].name[0] == NULL)
+		if (inode[0].name[0] == '\0')
 		{
 			createFile = 0;
 			break;
@@ -337,24 +336,24 @@ void mkdir(){
 		createFile=1;
 		for(int i=0;i<TOTAL_INODE;i++)if(inode[i].file_type==0){createFile=0;break;}
 		if(createFile==1)break;
-		//µÚi¸ö½ÚµãÐÅÏ¢Îª¿Õ£¬Ç°ÃæÎÞÏàÍ¬½ÚµãÐÅÏ¢ÎÄ¼þÃû£¬ÅÐ¶ÏÂ·¾¶ÊÇ·ñÕýÈ·
-		if (inode[i].name[0] == NULL)
+		//ï¿½ï¿½iï¿½ï¿½ï¿½Úµï¿½ï¿½ï¿½Ï¢Îªï¿½Õ£ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¬ï¿½Úµï¿½ï¿½ï¿½Ï¢ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½Â·ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½È·
+		if (inode[i].name[0] == '\0')
 		{
-			for (int i2=0; i2 < TOTAL_INODE; i2++)//²éÕÒ´´½¨ÎÄ¼þµÄÉÏÒ»Ä¿Â¼ÐÅÏ¢
+			for (int i2=0; i2 < TOTAL_INODE; i2++)//ï¿½ï¿½ï¿½Ò´ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½Ò»Ä¿Â¼ï¿½ï¿½Ï¢
 			{
-				if (inode[i2].name[0] == NULL)
+				if (inode[i2].name[0] == '\0')
 				{
-					createFile = 2;//Â·¾¶´íÎó£¬ÎÞ·¨´´½¨ÎÄ¼þ
+					createFile = 2;//Â·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Þ·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½
 					break;
 				}
 				for (int l = 0; l < FILENAME_MAX_LENGTH; l++)
 				{
 					int lastnode;
-					if (inode[i2].name[l] != getfilename[k - 1][l])//·ÇÍ¬ÃûÎÄ¼þ£¬½øÐÐÏÂÒ»½ÚµãÅÐ¶Ï
+					if (inode[i2].name[l] != getfilename[k - 1][l])//ï¿½ï¿½Í¬ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½Úµï¿½ï¿½Ð¶ï¿½
 					{
 						break;
 					}
-					if (l==FILENAME_MAX_LENGTH-1||getfilename[k - 1][l+1] == NULL)//´æÔÚÓëÉÏÒ»ÎÄ¼þÍ¬ÃûÎÄ¼þ,ÅÐ¶ÏÉÏÒ»ÎÄ¼þÂ·¾¶Óë´´½¨Â·¾¶ÊÇ·ñÏàÍ¬
+					if (l==FILENAME_MAX_LENGTH-1||getfilename[k - 1][l+1] == '\0')//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½Ä¼ï¿½Í¬ï¿½ï¿½ï¿½Ä¼ï¿½,ï¿½Ð¶ï¿½ï¿½ï¿½Ò»ï¿½Ä¼ï¿½Â·ï¿½ï¿½ï¿½ë´´ï¿½ï¿½Â·ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½Í¬
 					{
 
 						if (k - 1 == 0)
@@ -372,9 +371,9 @@ void mkdir(){
 								if (inode[lastnode].name[i5] != getfilename[k - i4][i5])
 								{
 									createFile = 0;
-									break;//¸Ã½ÚµãÐÅÏ¢²»ÊÇ´´½¨
+									break;//ï¿½Ã½Úµï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½Ç´ï¿½ï¿½ï¿½
 								}
-								if (i5 == FILENAME_MAX_LENGTH - 1 || getfilename[k - i4][i5 + 1] == NULL)
+								if (i5 == FILENAME_MAX_LENGTH - 1 || getfilename[k - i4][i5 + 1] == '\0')
 								{
 									lastnode = inode[lastnode].lastInode;
 									break;
@@ -386,7 +385,7 @@ void mkdir(){
 							if (k - i4 == 0)
 							{
 								
-								createFile = 3;//Â·¾¶ÕýÈ·£¬ÔÊÐí´´½¨ÎÄ¼þ
+								createFile = 3;//Â·ï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½
 								break;
 							}
 
@@ -394,10 +393,10 @@ void mkdir(){
 						
 					}
 					if (createFile == 3)
-						break;//Â·¾¶ÕýÈ·£¬ÔÊÐí´´½¨ÎÄ¼þ
+						break;//Â·ï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½
 					if (l == FILENAME_MAX_LENGTH - 1 && createFile == 0)
 					{
-						createFile = 2;//Â·¾¶´íÎóÎÞ·¨´´½¨ÎÄ¼þ
+						createFile = 2;//Â·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Þ·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½
 						break;
 					}
 					
@@ -410,12 +409,12 @@ void mkdir(){
 
 		for (int i1 = 0; i1 < FILENAME_MAX_LENGTH; i1++)
 		{
-			if (inode[i].name[i1] != getfilename[k][i1])//·ÇÍ¬ÃûÎÄ¼þ£¬½øÐÐÏÂÒ»¸ö½ÚµãÅÐ¶Ï¡Ì
+			if (inode[i].name[i1] != getfilename[k][i1])//ï¿½ï¿½Í¬ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Úµï¿½ï¿½Ð¶Ï¡ï¿½
 			{
 				break;
 			
 			}
-			if ( i1 == FILENAME_MAX_LENGTH - 1||getfilename[k][i1+1]==NULL)//´æÔÚÍ¬ÃûÎÄ¼þ£¬»ñÈ¡Í¬ÃûÎÄ¼þÂ·¾¶²¢ÅÐ¶ÏÊÇ·ñÓë´´½¨Â·¾¶ÏàÍ¬
+			if ( i1 == FILENAME_MAX_LENGTH - 1||getfilename[k][i1+1]=='\0')//ï¿½ï¿½ï¿½ï¿½Í¬ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½È¡Í¬ï¿½ï¿½ï¿½Ä¼ï¿½Â·ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½ï¿½Ç·ï¿½ï¿½ë´´ï¿½ï¿½Â·ï¿½ï¿½ï¿½ï¿½Í¬
 			{
 				int lastinode;
 				lastinode = inode[i].lastInode;
@@ -423,7 +422,7 @@ void mkdir(){
 				{
 					if (k - i2< 0)
 					{
-						printf("Â·¾¶ÏàÍ¬£¬´æÔÚÏàÍ¬ÎÄ¼þ");
+						printf("Â·ï¿½ï¿½ï¿½ï¿½Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¬ï¿½Ä¼ï¿½");
 						createFile = 4;//
 						break;
 					}
@@ -435,7 +434,7 @@ void mkdir(){
 							break;
 							
 						}
-						if (i3 == FILENAME_MAX_LENGTH - 1 || getfilename[k - i2][i3 + 1] == NULL)
+						if (i3 == FILENAME_MAX_LENGTH - 1 || getfilename[k - i2][i3 + 1] == '\0')
 						{
 							lastinode = inode[lastinode].lastInode;
 							break;
@@ -445,7 +444,7 @@ void mkdir(){
 						break;
 					if (k - i2 == 0)
 					{
-						printf("Â·¾¶ÏàÍ¬£¬´æÔÚÏàÍ¬ÎÄ¼þ");
+						printf("Â·ï¿½ï¿½ï¿½ï¿½Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¬ï¿½Ä¼ï¿½");
 						createFile = 4;//
 						break;
 					}
@@ -458,27 +457,27 @@ void mkdir(){
 				
 		}
 		if (createFile == 4)
-			break;//´æÔÚÍ¬ÃûÎÄ¼þ
+			break;//ï¿½ï¿½ï¿½ï¿½Í¬ï¿½ï¿½ï¿½Ä¼ï¿½
 	}
 
 	if (createFile == 0) 
 	{
 		for (int i = 0; i < FILENAME_MAX_LENGTH; i++)
 		{
-			if (getfilename[k][i] == NULL)
+			if (getfilename[k][i] == '\0')
 				break;
 			inode[0].name[i] = getfilename[k][i];
 			
 		}
 		
 		printf("%s", inode[0].name);
-		saveInode();
-		printf("´æ´¢´ÅÅÌÐÅÏ¢\n");
+		saveInode(uPath);
+		printf("ï¿½æ´¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢\n");
 	}
 	if (createFile == 1)
-		printf("´ÅÅÌÒÑÂú£¬ÎÞ·¨´´½¨ÎÄ¼þ\n");
+		printf("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Þ·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½\n");
 	if (createFile == 2)
-		printf("Â·¾¶´íÎó£¬ÎÞ·¨´´½¨ÎÄ¼þ\n");
+		printf("Â·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Þ·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½\n");
 	if (createFile == 3)
 	{   
 		int x;
@@ -493,20 +492,19 @@ void mkdir(){
 			strcpy(inode[x].name,getfilename[k]);
 		}
 		
-		saveInode();
-		printf("Â·¾¶ÕýÈ·£¬ÔÊÐí´´½¨ÎÄ¼þ\n");
+		saveInode(uPath);
+		printf("Â·ï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½\n");
 		//node.file_type = 1;
 		//node.user_id=
 	}
 	if (createFile == 4)
-	printf("´æÔÚÍ¬ÃûÎÄ¼þ\n");
+	printf("ï¿½ï¿½ï¿½ï¿½Í¬ï¿½ï¿½ï¿½Ä¼ï¿½\n");
 
 
 
 }
-
-void dirall(){
-	readinode();
+void _dir(char* uPath){
+	readinode(uPath);
 	printf("files:\n");
 	for(int i=0;i<TOTAL_INODE;i++)
 		if(inode[i].lastInode==nowin&&inode[i].file_type==1)printf(" %s  ",inode[i].name);
@@ -514,28 +512,4 @@ void dirall(){
 	for(int i=0;i<TOTAL_INODE;i++)
 		if(inode[i].lastInode==nowin&&inode[i].file_type==2&&i!=0)printf(" %s  ",inode[i].name);
 	printf("\n");
-}
-void main (){
-	cleanblock();//³õÊ¼»¯
-	initInode();//³õÊ¼»¯
-	int i;
-	char dir[100];
-	char name[10];
-    int x=1;
-    while(x==1){
-	printf("%s>>",nowins);
-    scanf("%d",&i);
-    switch(i){
-        case 0:x++;break;
-		case 1:{createfile();break;}
-		case 2:printf("please input your dir£º"); scanf("%s",dir);changenowin(dir);printf("%d",nowin); break;
-		case 3:printf("please input readfilename:");scanf("%s",name);readfile(name);break;
-        case 4:printf("please input writefilename:");scanf("%s",name);writefile(name);break;
-		case 5:dirall();break;
-        case 6:mkdir();break;
-		case 7:openfile();break;
-	    case 8:closefile();break;
-        default:printf("??");break;
-    }
-    }
 }

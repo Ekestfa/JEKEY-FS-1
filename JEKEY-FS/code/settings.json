@@ -1,3 +1,7 @@
 {
-    "C_Cpp.errorSquiggles": "Enabled"
+    "C_Cpp.errorSquiggles": "Enabled",
+    "files.associations": {
+        "dirent.h": "c",
+        "string.h": "c"
+    }
 }

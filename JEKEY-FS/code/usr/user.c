@@ -1,4 +1,3 @@
-#include<stdbool.h>
 #include"user.h"
 #include<stdlib.h>
 #include<stdio.h>
@@ -80,7 +79,7 @@ bool createUser(const char* name, const char* password){
         system(command);
     }
 
-    logPath = returnPath(u[checker].user_name);
+    logPath = returnLog(u[checker].user_name);
     FILE* userlog = fopen(logPath,"r");
 
     printf("Checking for user log...\n");
@@ -102,7 +101,7 @@ bool createUser(const char* name, const char* password){
     return 1;
 }
 
-char* returnPath(char* name){
+char* returnLog(char* name){
     char* path = IDFILE;
     char* fn = NULL;
     char* input = NULL; 
@@ -123,13 +122,22 @@ char* returnPath(char* name){
     return input;
 }
 
+char* returnPath(char* name){
+    char* fn = NULL;
+    int argvLen = strlen(name);
+    fn = malloc(sizeof(OPTFILE) + argvLen + 1);
+    fn = strcpy(fn, OPTFILE); // fn: /opt/
+    fn = strcat(fn, name); // fn: /opt/$Username
+    return fn;
+}
+
 void listUsers(){
 
     int i = 0;
     char* inputPath = NULL;
     FILE* f = NULL;
     while(u[i].user_name[0] != '\000'){
-        inputPath = returnPath(u[i].user_name);
+        inputPath = returnLog(u[i].user_name);
         if(f = fopen(inputPath,"rb")){
             fread(&u[i],sizeof(u),1,f);
             printf("User ID: %d, User name: %s, Pass: %s\n",u[i].user_id, u[i].user_name, u[i].user_password);
@@ -150,7 +158,7 @@ struct user* login(const char* name, const char* password){
     if(checker == -1){
         id = getFoundedID(name);
         FILE* f = NULL;
-        inputPath = returnPath(u[id].user_name);
+        inputPath = returnLog(u[id].user_name);
         if(f = fopen(inputPath,"rb")){
             fread(&u[id],sizeof(u),1,f);
             if(strcmp((u+id)->user_password,password)){
@@ -175,8 +183,6 @@ void initUser(){
     }
 }
 
-bool openUser();
-
 void saveUser(){
     int j = 0;
     FILE* fp;
@@ -197,8 +203,10 @@ void saveUser(){
                     u[j].user_id = j;
                     j++;
                 }// if end
-            }// while end*/
+            }// while end
         } //if end
     }// for end
     free(fp);free(d);free(fn);
 }
+
+bool openUser();
